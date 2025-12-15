@@ -182,6 +182,14 @@ Based on all experimental stages, the optimal setup is:
 
 ## Conclusion
 
-This study demonstrates that fine-tuning BERT for SMS spam detection can be significantly enhanced through careful optimization. While data augmentation did not improve results in this case, **regularization techniques and adaptive learning rate strategies proved critical** for improving generalization. The findings highlight the importance of systematic experimentation when applying transformer-based models to real-world text classification tasks.
+This project systematically evaluated multiple optimization strategies for SMS spam detection using a fine-tuned DistilBERT model. Starting from a baseline fine-tuned configuration, several improvements were explored to identify the most effective training setup.
+
+The results show that **optimizer choice had the strongest impact on performance**, where RMSprop consistently outperformed AdamW and SGD by achieving the highest F1-score and the lowest loss. This indicates that RMSprop provided more stable convergence for short and noisy SMS text.
+
+In contrast, **data augmentation techniques did not lead to noticeable performance gains**, suggesting that the balanced dataset and contextual representations learned by DistilBERT were already sufficient for this task.
+
+Regularization techniques, particularly **dropout**, along with **early stopping and adaptive learning rate scheduling**, significantly improved model generalization and reduced overfitting.
+
+Overall, the best-performing configuration combined **RMSprop optimization, dropout regularization, early stopping, and a Reduce-on-Plateau learning rate strategy**. This setup achieved the best balance between precision, recall, and F1-score, making it the most suitable choice for SMS spam detection in this project.
 
 ---
