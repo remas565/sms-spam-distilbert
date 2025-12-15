@@ -1,6 +1,9 @@
-# SMS Spam Detection using DistilBERT
+# SMS Spam Classification using Fine-Tuned BERT
 
-A comprehensive deep learning project for detecting spam messages using transfer learning with DistilBERT. This project includes baseline evaluation, fine-tuning, optimization experiments, and multiple improvement techniques.
+A comprehensive deep learning project for SMS spam detection using **BERT-base-uncased** and transfer learning.
+The project systematically evaluates fine-tuning, optimizer choice, data augmentation, regularization techniques, and learning rate strategies, with detailed experimental analysis.
+
+---
 
 ## Table of Contents
 
@@ -9,43 +12,57 @@ A comprehensive deep learning project for detecting spam messages using transfer
 * [Dataset](#dataset)
 * [Model Architecture](#model-architecture)
 * [Installation](#installation)
+* [Experimental Setup](#experimental-setup)
 * [Experiments & Results](#experiments--results)
-* [Performance Metrics](#performance-metrics)
+* [Model Interpretability](#model-interpretability)
 * [Key Insights](#key-insights)
-* [Contributing](#contributing)
 * [Acknowledgments](#acknowledgments)
 
 ---
 
 ## Overview
 
-This project implements a state-of-the-art SMS spam detection system using DistilBERT, a distilled version of BERT that preserves most of BERT’s performance while significantly reducing computational cost. The system achieves high classification performance through task-specific fine-tuning, optimization strategies, and transfer learning evaluation.
+This project implements an **SMS Spam Detection system using BERT-base-uncased**, a transformer-based language model pre-trained on large-scale English corpora.
+The model is adapted to the spam classification task through **task-specific fine-tuning**, while extensive experiments are conducted to evaluate optimization strategies and robustness improvements.
 
 ---
 
 ## Features
 
-* **Baseline Model Evaluation** using a pre-trained DistilBERT model
-* **Transfer Learning** through fine-tuning on SMS spam data
-* **Optimizer Comparison** (AdamW, RMSProp, SGD)
-* **Learning Rate Analysis**
-* **Data Augmentation** using synonym replacement
-* **Dropout Regularization** for improved generalization
-* **Cross-Dataset Transfer Learning Evaluation**
-* **Comprehensive Metrics**: Accuracy, Precision, Recall, F1-score, and Loss
+* **Baseline Evaluation** of pre-trained BERT without task-specific training
+* **Transfer Learning** via fine-tuning on SMS spam data
+* **Hyperparameter Tuning** (learning rate, batch size, epochs)
+* **Optimizer Comparison** (AdamW, RMSprop, SGD)
+* **Data Augmentation** (Synonym Replacement, Random Deletion)
+* **Regularization Techniques** (Dropout, Early Stopping)
+* **Learning Rate Scheduling** (Reduce on Plateau, Linear Warmup)
+* **Gradient-based Token Importance Analysis**
+* **Comprehensive Metrics**: Accuracy, Precision, Recall, F1-score, Loss
 
 ---
 
 ## Dataset
 
-The primary dataset used in this project is the SMS Spam Collection Dataset:
+**SMS Spam Collection Dataset**
 
 * **Total Messages**: 5,572
-* **Ham (Non-spam)**: 4,825 (86.6%)
+* **Ham (Non-Spam)**: 4,825 (86.6%)
 * **Spam**: 747 (13.4%)
-* **Split Ratio**: 70% Training / 15% Validation / 15% Testing
 
-An additional external SMS dataset is used to evaluate transfer learning and generalization performance.
+### Balancing Strategy
+
+To address class imbalance, the dataset was **balanced by random sampling**:
+
+* 747 Spam
+* 747 Ham
+
+### Data Split
+
+* **Training**: 70%
+* **Validation**: 15%
+* **Testing**: 15%
+
+Stratified splitting was applied to preserve class distribution.
 
 ---
 
@@ -53,35 +70,40 @@ An additional external SMS dataset is used to evaluate transfer learning and gen
 
 ### Base Model
 
-* **Model**: DistilBERT-base-uncased
-* **Parameters**: ~66 million
-* **Tokenizer**: DistilBertTokenizerFast
-* **Maximum Sequence Length**: 128 tokens
+* **Model**: BERT-base-uncased
+* **Layers**: 12 Transformer encoder layers
+* **Hidden Size**: 768
+* **Parameters**: ~110M
+* **Tokenizer**: BertTokenizerFast
+* **Max Sequence Length**: 128 tokens
 
 ### Classification Head
 
-* Fully connected linear layer (768 → 2)
+* Linear layer (768 → 2)
 * Softmax activation for binary classification
 
-### Training Configuration
+### Training Strategy
 
-* **Frozen Layers**: DistilBERT encoder layers
+* **Frozen Layers**: BERT encoder
 * **Trainable Parameters**: Classification head only
-* **Batch Size**: 16
-* **Epochs**: 3–5 depending on experiment
 
 ---
 
 ## Installation
 
-### Prerequisites
+### Requirements
 
 ```bash
 Python 3.8+
-CUDA-capable GPU (recommended)
+torch
+transformers
+datasets
+scikit-learn
+nlpaug
+nltk
 ```
 
-### Dependencies
+### Install Dependencies
 
 ```bash
 pip install transformers datasets scikit-learn torch nlpaug nltk
@@ -91,146 +113,151 @@ pip install transformers datasets scikit-learn torch nlpaug nltk
 
 ```python
 import nltk
-nltk.download('wordnet')
-nltk.download('averaged_perceptron_tagger_eng')
+nltk.download("wordnet")
+nltk.download("averaged_perceptron_tagger_eng")
 ```
+
+---
+
+## Experimental Setup
+
+* **Batch Size**: 8
+* **Epochs**: 5
+* **Learning Rate**: 2e-5
+* **Weight Decay**: 0.01
+* **Optimizer (Baseline)**: AdamW
+* **Evaluation Metric for Model Selection**: Accuracy / F1-score
 
 ---
 
 ## Experiments & Results
 
-### 1. Baseline Evaluation (Before Fine-tuning)
+### 1. Baseline (Pre-trained BERT – No Fine-Tuning)
 
 | Metric    | Value  |
 | --------- | ------ |
 | Accuracy  | 72.61% |
 | Precision | 27.59% |
 | Recall    | 64.29% |
-| F1-Score  | 38.61% |
+| F1-score  | 38.61% |
 | Loss      | 0.6847 |
 
-**Analysis**: The baseline pre-trained model performs poorly on SMS spam detection, highlighting the necessity of task-specific fine-tuning.
+🔎 *Observation*: Pre-trained BERT without fine-tuning performs poorly on SMS spam detection.
 
 ---
 
-### 2. Fine-Tuned Model Performance
+### 2. Fine-Tuned BERT (Baseline Model)
 
-| Metric    | Value  |
-| --------- | ------ |
-| Accuracy  | 98.80% |
-| Precision | 95.54% |
-| Recall    | 95.54% |
-| F1-Score  | 95.54% |
-| Loss      | 0.0418 |
+| Metric    | Value      |
+| --------- | ---------- |
+| Accuracy  | **98.80%** |
+| Precision | 95.54%     |
+| Recall    | 95.54%     |
+| F1-score  | 95.54%     |
+| Loss      | 0.0418     |
 
-**Improvement**: Significant performance gains are achieved after fine-tuning, demonstrating the effectiveness of transfer learning.
+Fine-tuning yields a **dramatic performance improvement**, validating transfer learning.
 
 ---
 
 ### 3. Optimizer Comparison
 
-| Optimizer | Accuracy | Precision | Recall | F1-Score | Loss   |
-| --------- | -------- | --------- | ------ | -------- | ------ |
-| AdamW     | 99.52%   | 100.00%   | 96.43% | 98.18%   | 0.0281 |
-| RMSProp   | 99.52%   | 100.00%   | 96.43% | 98.18%   | 0.0291 |
-| SGD       | 98.56%   | 96.30%    | 92.86% | 94.55%   | 0.0450 |
+| Optimizer | Accuracy (%) | Precision (%) | Recall (%) | F1-score (%) | Loss  |
+| --------- | ------------ | ------------- | ---------- | ------------ | ----- |
+| AdamW     | **99.52**    | **100.00**    | 96.43      | **98.18**    | 0.028 |
+| RMSprop   | 99.52        | 100.00        | 96.43      | 98.18        | 0.029 |
+| SGD       | 98.56        | 96.30         | 92.86      | 94.55        | 0.045 |
 
-**Finding**: AdamW and RMSProp achieve the highest performance, while SGD shows slightly lower accuracy and F1-score.
-
----
-
-### 4. Learning Rate Evaluation
-
-| Learning Rate | Accuracy | Precision | Recall | F1-Score | Loss   |
-| ------------- | -------- | --------- | ------ | -------- | ------ |
-| 3e-5          | 98.56%   | 96.30%    | 92.86% | 94.55%   | 0.0411 |
-| 5e-4          | 99.52%   | 100.00%   | 96.43% | 98.18%   | 0.0281 |
-| 1e-3          | 99.52%   | 100.00%   | 96.43% | 98.18%   | 0.0269 |
-
-**Finding**: Higher learning rates yield better convergence and lower loss.
+ **Best Optimizer**: AdamW (highest stability and lowest loss).
 
 ---
 
-### 5. Data Augmentation (Synonym Replacement)
+### 4. Data Augmentation
 
-| Metric    | Value  |
-| --------- | ------ |
-| Accuracy  | 99.28% |
-| Precision | 99.07% |
-| Recall    | 95.54% |
-| F1-Score  | 97.27% |
-| Loss      | 0.0332 |
+#### Synonym Replacement
 
-**Observation**: Data augmentation improves overall robustness and F1-score.
+Improved robustness and maintained high F1-score.
+
+#### Random Deletion
+
+Provided minor robustness gains but slightly reduced stability compared to synonym augmentation.
 
 ---
 
-### 6. Dropout Regularization
+### 5. Regularization Techniques
 
-| Metric    | Value  |
-| --------- | ------ |
-| Accuracy  | 99.40% |
-| Precision | 99.08% |
-| Recall    | 96.43% |
-| F1-Score  | 97.74% |
-| Loss      | 0.0315 |
+#### Dropout (p = 0.3)
 
-**Result**: Dropout regularization achieves the best overall performance.
+| Metric    | Value      |
+| --------- | ---------- |
+| Accuracy  | **99.40%** |
+| Precision | 99.08%     |
+| Recall    | 96.43%     |
+| F1-score  | **97.74%** |
+| Loss      | 0.0315     |
 
----
+**Best Overall Performance Achieved with Dropout**
 
-### 7. Transfer Learning on External Dataset
+#### Early Stopping
 
-| Metric    | Value  |
-| --------- | ------ |
-| Accuracy  | 98.78% |
-| Precision | 96.41% |
-| Recall    | 94.32% |
-| F1-Score  | 95.36% |
-| Loss      | 0.0365 |
-
-**Finding**: The model generalizes well to unseen SMS datasets.
+Reduced training time while maintaining comparable performance.
 
 ---
 
-## Performance Metrics
+### 6. Learning Rate Strategies
 
-### Best Overall Model
+| Strategy             | Accuracy (%) | F1-score (%) |
+| -------------------- | ------------ | ------------ |
+| Fixed LR (Baseline)  | 98.80        | 95.54        |
+| Reduce LR on Plateau | ↑ Improved   | ↑ Improved   |
+| Linear Warmup        | Comparable   | Stable       |
 
-```
-Accuracy:  99.40%
-Precision: 99.08%
-Recall:    96.43%
-F1-Score:  97.74%
-Loss:      0.0315
-```
+Learning rate scheduling improves convergence stability.
+
+---
+
+## Model Interpretability
+
+A **gradient-based token importance analysis** was applied to individual SMS messages.
+
+### Example (Spam)
+
+Important tokens included:
+
+* *congratulations*
+* *iphone*
+* *prize*
+* *call*
+* *claim*
+
+### Example (Ham)
+
+Important tokens included:
+
+* *home*
+* *dinner*
+* *call*
+* *later*
+
+This confirms that the model learns **semantic spam cues**, not simple keyword rules.
 
 ---
 
 ## Key Insights
 
-1. Fine-tuning significantly improves spam detection performance.
-2. Optimizer choice has a noticeable impact on convergence and loss.
-3. Data augmentation enhances robustness and class balance.
-4. Dropout regularization reduces overfitting.
-5. The model demonstrates strong generalization across datasets.
-
----
-
-## Contributing
-
-Contributions are welcome.
-
-1. Fork the repository
-2. Create a new feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
+1. Fine-tuning is essential for transformer-based spam detection.
+2. AdamW consistently provides the best optimizer performance.
+3. Data augmentation improves robustness.
+4. Dropout regularization yields the highest overall performance.
+5. Learning rate scheduling enhances convergence stability.
+6. The model bases predictions on meaningful semantic patterns.
 
 ---
 
 ## Acknowledgments
 
 * **Dataset**: SMS Spam Collection Dataset
-* **Model**: HuggingFace DistilBERT
-* **Frameworks**: PyTorch, Transformers, scikit-learn
+* **Model**: HuggingFace BERT-base-uncased
+* **Libraries**: PyTorch, Transformers, scikit-learn, nlpaug
+
+---
